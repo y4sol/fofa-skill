@@ -56,8 +56,10 @@ def api_request(endpoint: str, params: dict = None) -> dict:
     try:
         with urllib.request.urlopen(url, timeout=30) as response:
             result = json.loads(response.read().decode("utf-8"))
+            # Handle FOFA error response: {"error": true, "errmsg": "..."}
             if result.get("error"):
-                raise Exception(result["error"])
+                errmsg = result.get("errmsg", "Unknown error")
+                raise Exception(errmsg)
             return result
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8")
@@ -85,7 +87,7 @@ class FOFA:
     
     def host(self, host: str) -> dict:
         """Host query"""
-        return api_request("/search/host", {"host": host})
+        return api_request(f"/host/{host}")
     
     def hosts(self, host_list: List[str], simple: bool = False) -> dict:
         """Batch host query"""
