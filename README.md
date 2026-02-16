@@ -29,7 +29,31 @@ export FOFA_EMAIL="your@email.com"
 export FOFA_API_KEY="your-api-key"
 ```
 
-### 2. Basic Usage
+### 2. Test Before Upload
+
+Always test the script locally before uploading to GitHub:
+
+```bash
+# Test basic search
+python scripts/fofa_query.py search "domain=example.com"
+
+# Test info command
+python scripts/fofa_query.py info
+
+# Test count command
+python scripts/fofa_query.py count "domain=example.com"
+```
+
+### 3. Verify No Errors
+
+Check that all commands work correctly:
+- `search` - Asset query
+- `count` - Result count  
+- `info` - Account info
+
+Note: Some features like `stats` require FOFA VIP membership.
+
+## Basic Usage
 
 ```bash
 # Asset query
@@ -58,7 +82,7 @@ python fofa_query.py search "port=3306" -s 1000
 python fofa_query.py search "server=nginx" -o result.json
 ```
 
-### stats - Statistics Aggregation
+### stats - Statistics Aggregation (VIP Required)
 
 ```bash
 python fofa_query.py stats <query> --field <field>
@@ -115,10 +139,6 @@ fofa = FOFA()
 # Query
 result = fofa.search("domain=example.com", size=100)
 print(result["results"])
-
-# Statistics
-stats = fofa.stats("port=3306", field="country")
-print(stats)
 
 # Count
 count = fofa.count("domain=example.com")
