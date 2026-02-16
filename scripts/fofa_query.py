@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 FOFA API Client
-Only supports: search, stats, host, info, next (pagination)
+API: search, stats, host, hosts, info, products, next, count
 """
 
 import os
@@ -77,6 +77,14 @@ class FOFA:
         """Account info"""
         return api_request("/info/my")
     
+    def hosts(self, hosts: str):
+        """Batch host query"""
+        return api_request("/search/hosts", {"hosts": hosts})
+    
+    def products(self):
+        """Product list"""
+        return api_request("/info/products")
+    
     def next(self, last_id: str, size: int = 100):
         """Pagination - get next page"""
         return api_request("/search/next", {"last_id": last_id, "size": min(size, 10000)})
@@ -133,6 +141,18 @@ def cmd_info(args):
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
+def cmd_hosts(args):
+    fofa = FOFA()
+    result = fofa.hosts(args.hosts)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+
+def cmd_products(args):
+    fofa = FOFA()
+    result = fofa.products()
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+
 def cmd_next(args):
     fofa = FOFA()
     result = fofa.next(args.last_id, size=args.size)
@@ -173,7 +193,14 @@ def main():
     p.add_argument("host")
     
     # info
-    subparsers.add_parser("info", help="Account info")
+    p = subparsers.add_parser("info", help="Account info")
+    
+    # hosts
+    p = subparsers.add_parser("hosts", help="Batch host query")
+    p.add_argument("hosts", help="Comma-separated hosts")
+    
+    # products
+    subparsers.add_parser("products", help="Product list")
     
     # next
     p = subparsers.add_parser("next", help="Pagination")
@@ -200,6 +227,10 @@ def main():
             cmd_host(args)
         elif args.cmd == "info":
             cmd_info(args)
+        elif args.cmd == "hosts":
+            cmd_hosts(args)
+        elif args.cmd == "products":
+            cmd_products(args)
         elif args.cmd == "next":
             cmd_next(args)
         elif args.cmd == "count":
