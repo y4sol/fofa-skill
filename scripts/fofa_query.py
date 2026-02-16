@@ -113,7 +113,7 @@ class FOFA:
     
     def count(self, query: str) -> int:
         """Get result count"""
-        result = self.search(query, size=1)
+        result = self.search(query, size=1, page=1)
         return result.get("total", 0)
 
 
