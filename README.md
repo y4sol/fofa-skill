@@ -1,6 +1,10 @@
-# FOFA API 客户端
+# FOFA Skill
 
-> FOFA 网络空间资产搜索引擎 Python CLI 工具
+> OpenClaw/AgentSkills 兼容的 FOFA 资产查询技能
+
+## 简介
+
+FOFA 是国内领先的网络空间资产搜索引擎,本 Skill 提供完整的 CLI 工具用于资产发现、查询和统计。
 
 ## 功能特性
 
@@ -14,42 +18,31 @@
 ## 环境要求
 
 - Python 3.7+
-- 无需额外安装依赖
+- FOFA API 密钥
 
 ## 快速开始
 
 ### 1. 配置认证
 
-方式一: 环境变量 (推荐)
 ```bash
 export FOFA_EMAIL="your@email.com"
 export FOFA_API_KEY="your-api-key"
-```
-
-方式二: 单一变量 (email:key 格式)
-```bash
-export FOFA_TOKEN="your@email.com:your-api-key"
-```
-
-方式三: 命令行参数
-```bash
-python fofa.py search "domain=example.com" -e your@email.com -k your-api-key
 ```
 
 ### 2. 基本使用
 
 ```bash
 # 资产查询
-python fofa.py search "domain=example.com"
+python fofa_query.py search "domain=example.com"
 
 # 统计聚合
-python fofa.py stats "port=3306" --field country
+python fofa_query.py stats "port=3306" --field country
 
-# 数量查询
-python fofa.py count "domain=target.com"
+# CVE 特征
+python fofa_query.py cve redis
 
 # 账号信息
-python fofa.py info
+python fofa_query.py info
 ```
 
 ## 命令详解
@@ -57,85 +50,35 @@ python fofa.py info
 ### search - 资产查询
 
 ```bash
-python fofa.py search <query> [options]
+python fofa_query.py search <query> [options]
 
 # 示例
-python fofa.py search "domain=baidu.com"
-python fofa.py search "port=3306" -s 1000 -p 1
-python fofa.py search "server=nginx" -f "host,ip,port,title" -o result.json
-python fofa.py search "app=MySQL" -c result.csv
+python fofa_query.py search "domain=baidu.com"
+python fofa_query.py search "port=3306" -s 1000
+python fofa_query.py search "server=nginx" -o result.json
 ```
-
-| 参数 | 简写 | 说明 |
-|------|------|------|
-| `--size` | `-s` | 返回数量 (默认 100) |
-| `--page` | `-p` | 页码 (默认 1) |
-| `--fields` | `-f` | 返回字段 |
-| `--limit` | `-l` | 显示数量 (默认 10) |
-| `--output` | `-o` | JSON 输出文件 |
-| `--csv` | `-c` | CSV 输出文件 |
 
 ### stats - 统计聚合
 
 ```bash
-python fofa.py stats <query> [options]
+python fofa_query.py stats <query> --field <field>
 
-# 示例
-python fofa.py stats "domain=example.com" --field protocol
-python fofa.py stats "port=3306" --field country
-python fofa.py stats "port=6379" --field server
-```
-
-可用字段: `protocol`, `os`, `server`, `port`, `domain`, `country`, `province`, `city`
-
-### host - Host 查询
-
-```bash
-# IP 资产查询
-python fofa.py host 1.1.1.1
-
-# 域名资产查询
-python fofa.py host example.com
-```
-
-### hosts - 批量查询
-
-```bash
-python fofa.py hosts 1.1.1.1 8.8.8.8 114.114.114.114
-python fofa.py hosts 1.1.1.1 8.8.8.8 --simple
-```
-
-### count - 数量查询
-
-```bash
-python fofa.py count "domain=target.com"
+# 可用字段
+# protocol, os, server, port, domain, country, province, city
 ```
 
 ### cve - CVE/产品特征
 
 ```bash
 # 列出所有特征
-python fofa.py cve --list
+python fofa_query.py cve --list
 
 # 查询特定产品
-python fofa.py cve redis
-python fofa.py cve weblogic
-python fofa.py cve mysql
+python fofa_query.py cve redis
+python fofa_query.py cve weblogic
 
-# 查询并执行 FOFA 搜索
-python fofa.py cve redis --search -s 20
-```
-
-### info - 账号信息
-
-```bash
-python fofa.py info
-```
-
-### products - 产品列表
-
-```bash
-python fofa.py products
+# 查询并执行搜索
+python fofa_query.py cve redis --search
 ```
 
 ## 查询语法
@@ -148,38 +91,25 @@ python fofa.py products
 | `host=` | 主机 | `host=192.168.1.1` |
 | `ip=` | IP 范围 | `ip=1.1.1.0/24` |
 | `port=` | 端口 | `port=3306` |
-| `protocol=` | 协议 | `protocol=http` |
 | `server=` | 服务器 | `server=nginx` |
 | `app=` | 应用 | `app=MySQL` |
 | `title=` | 标题 | `title=后台` |
-| `header=` | HTTP 头 | `header=X-Powered-By` |
-| `body=` | 页面内容 | `body=password` |
 
 ### 组合查询
 
 ```bash
-# AND (默认)
-python fofa.py search "domain=example.com AND port=80"
+# AND
+python fofa_query.py search "domain=example.com AND port=80"
 
 # OR
-python fofa.py search "server=nginx OR server=apache"
-
-# 复杂条件
-python fofa.py search "domain=target.com AND (port=80 OR port=443)"
+python fofa_query.py search "server=nginx OR server=apache"
 ```
-
-## 返回字段
-
-常用字段: `host,ip,port,protocol,server,title,domain,os,asn,country,province,city`
-
-完整字段请参考 [FOFA 官方文档](https://fofa.info/api)。
 
 ## Python 调用
 
 ```python
-from fofa import FOFA
+from fofa_query import FOFA
 
-# 初始化
 fofa = FOFA()
 
 # 查询
@@ -195,24 +125,10 @@ count = fofa.count("domain=example.com")
 print(count)
 ```
 
-## 支持的产品特征
+## 依赖
 
-| 分类 | 产品 |
-|------|------|
-| 中间件 | WebLogic, Tomcat, JBoss, WebSphere |
-| Web 服务器 | Nginx, Apache, IIS |
-| 框架 | Spring, Struts2, Django, Flask, Shiro, Fastjson |
-| 数据库 | MySQL, PostgreSQL, MongoDB, Redis, ElasticSearch |
-| 缓存/消息 | RabbitMQ, Kafka, ActiveMQ |
-| 运维工具 | Jenkins, GitLab, Nexus, Jira, Zabbix, Grafana |
-| 云原生 | Docker, Kubernetes, MinIO, Harbor |
+本技能使用 Python 标准库,无需额外安装依赖。
 
-## 注意事项
-
-1. **API 限制**: 免费会员每日有限额
-2. **结果数量**: 单次最大 10000 条
-3. **合规使用**: 仅限授权的安全测试和资产梳理
-
-## License
+## 许可证
 
 MIT
