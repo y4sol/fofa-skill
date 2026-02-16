@@ -1,12 +1,7 @@
 ---
 name: fofa
-description: |
-  使用 FOFA 官方 API 进行网络空间资产发现、查询和统计。适用于:
-  (1) 域名相关资产查询
-  (2) IP/主机资产获取
-  (3) 端口/服务统计分析
-  (4) CVE 漏洞资产快速定位
-  (5) 企业攻击面评估
+description: 使用 FOFA 网络空间资产搜索引擎进行资产发现和查询。适用于: (1) 域名相关资产查询 (2) 端口/服务统计 (3) CVE 漏洞资产定位 (4) 企业攻击面评估
+metadata: {"openclaw": {"requires": {"env": ["FOFA_EMAIL", "FOFA_API_KEY"]}, "emoji": "🔍"}}
 ---
 
 # FOFA 资产查询
@@ -16,35 +11,34 @@ FOFA 是国内领先的网络空间资产搜索引擎,提供完整的 RESTful AP
 ## 环境设置
 
 ```bash
-# 配置认证 (二选一)
+# 配置认证
 export FOFA_EMAIL="your@email.com"
 export FOFA_API_KEY="your-api-key"
-
-# 或
-export FOFA_TOKEN="your@email.com:your-api-key"
 ```
 
-## 命令行用法
+## 使用方法
+
+### 命令行
 
 ```bash
-# 资产查询
-python scripts/fofa_query.py search "domain=example.com"
-
-# 统计聚合
-python scripts/fofa_query.py stats "port=3306" --field country
-
-# 数量查询
-python scripts/fofa_query.py count "domain=target.com"
-
-# CVE/产品特征
-python scripts/fofa_query.py cve redis
-python scripts/fofa_query.py cve --list
-
-# 账号信息
-python scripts/fofa_query.py info
+python {baseDir}/scripts/fofa_query.py search "domain=example.com"
+python {baseDir}/scripts/fofa_query.py stats "port=3306" --field country
+python {baseDir}/scripts/fofa_query.py cve redis
+python {baseDir}/scripts/fofa_query.py info
 ```
 
-## 官方 API 接口
+### Python 调用
+
+```python
+import sys
+sys.path.insert(0, "{baseDir}/scripts")
+from fofa_query import FOFA
+
+fofa = FOFA()
+result = fofa.search("domain=example.com", size=100)
+```
+
+## 命令列表
 
 | 命令 | 功能 |
 |------|------|
@@ -59,24 +53,21 @@ python scripts/fofa_query.py info
 
 ## 查询语法
 
-| 语法 | 说明 |
-|------|------|
-| `domain=` | 域名 |
-| `host=` | 主机 |
-| `ip=` | IP 范围 |
-| `port=` | 端口 |
-| `server=` | 服务器 |
-| `app=` | 应用 |
+| 语法 | 说明 | 示例 |
+|------|------|------|
+| `domain=` | 域名 | `domain=baidu.com` |
+| `port=` | 端口 | `port=3306` |
+| `server=` | 服务器 | `server=nginx` |
+| `app=` | 应用 | `app=MySQL` |
+| `title=` | 标题 | `title=后台` |
 
-## Python 调用
+## 支持的产品特征
 
-```python
-from scripts.fofa_query import FOFA
-
-fofa = FOFA()
-result = fofa.search("domain=example.com", size=100)
-print(result["results"])
-```
+- **数据库**: MySQL, PostgreSQL, MongoDB, Redis, ElasticSearch
+- **中间件**: WebLogic, Tomcat, JBoss
+- **框架**: Spring, Struts2, Django, Shiro, Fastjson
+- **运维**: Jenkins, GitLab, Nexus, Jira, Zabbix
+- **云原生**: Docker, Kubernetes, MinIO
 
 ## 注意事项
 
