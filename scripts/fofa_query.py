@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-FOFA API 客户端 - 官方 API 完整封装
-功能: 资产查询、统计聚合、批量处理、CVE 特征关联
+FOFA API Client - Official API Complete Wrapper
+Features: Asset Query, Statistics, Batch Processing, CVE Fingerprint Lookup
 """
 
 import os
@@ -13,38 +13,37 @@ import urllib.request
 import base64
 import csv
 import subprocess
-from typing import Optional, List, Dict, Any
-from collections import Counter
+from typing import List, Dict, Optional, Tuple
 
 
-# ========== 配置 ==========
-TOKEN = os.environ.get("FOFA_TOKEN")  # 兼容: FOFA_TOKEN = email:key
+# ========== Configuration ==========
+
 FOFA_EMAIL = os.environ.get("FOFA_EMAIL")
 FOFA_API_KEY = os.environ.get("FOFA_API_KEY")
 BASE_URL = "https://fofa.info/api/v1"
 
 
 def get_credentials() -> tuple:
-    """获取认证信息"""
-    # 优先使用 FOFA_TOKEN (email:key 格式)
-    if TOKEN:
-        if ":" in TOKEN:
-            email, key = TOKEN.split(":", 1)
-            return email, key
-    
+    """Get authentication credentials"""
     if FOFA_EMAIL and FOFA_API_KEY:
         return FOFA_EMAIL, FOFA_API_KEY
     
-    raise ValueError("请设置 FOFA_EMAIL + FOFA_API_KEY 或 FOFA_TOKEN (email:key)")
+    # Try FOFA_TOKEN format: email:key
+    token = os.environ.get("FOFA_TOKEN")
+    if token and ":" in token:
+        email, key = token.split(":", 1)
+        return email, key
+    
+    raise ValueError("Please set FOFA_EMAIL + FOFA_API_KEY or FOFA_TOKEN (email:key)")
 
 
-def get_script_dir():
-    """获取脚本目录"""
+def get_script_dir() -> str:
+    """Get script directory"""
     return os.path.dirname(os.path.realpath(__file__))
 
 
 def api_request(endpoint: str, params: dict = None) -> dict:
-    """发送 API 请求"""
+    """Send API request"""
     email, key = get_credentials()
     url = f"{BASE_URL}{endpoint}"
     
@@ -68,16 +67,16 @@ def api_request(endpoint: str, params: dict = None) -> dict:
         except:
             raise Exception(f"HTTP {e.code}: {error_body}")
     except Exception as e:
-        raise Exception(f"请求失败: {str(e)}")
+        raise Exception(f"Request failed: {str(e)}")
 
 
-# ========== FOFA API 类 ==========
+# ========== FOFA API Class ==========
 
 class FOFA:
-    """FOFA API 客户端"""
+    """FOFA API Client"""
     
     def search(self, query: str, size: int = 100, page: int = 1, fields: str = None) -> dict:
-        """资产查询"""
+        """Asset search query"""
         qbase64 = base64.b64encode(query.encode()).decode()
         params = {"qbase64": qbase64, "size": min(size, 10000), "page": page}
         if fields:
@@ -85,55 +84,55 @@ class FOFA:
         return api_request("/search/all", params)
     
     def host(self, host: str) -> dict:
-        """Host 查询"""
+        """Host query"""
         return api_request("/search/host", {"host": host})
     
     def hosts(self, host_list: List[str], simple: bool = False) -> dict:
-        """批量 Host"""
+        """Batch host query"""
         return api_request("/search/hosts", {
             "hosts": ",".join(host_list),
             "simple": "1" if simple else "0"
         })
     
     def stats(self, query: str, field: str = "protocol") -> dict:
-        """统计聚合"""
+        """Statistics aggregation"""
         qbase64 = base64.b64encode(query.encode()).decode()
         return api_request("/search/stats", {"qbase64": qbase64, "field": field})
     
     def user_info(self) -> dict:
-        """账号信息"""
+        """Get account information"""
         return api_request("/info/my")
     
     def products(self) -> dict:
-        """产品列表"""
+        """Get product list"""
         return api_request("/info/products")
     
     def apps(self) -> dict:
-        """应用指纹"""
+        """Get application fingerprints"""
         return api_request("/info/apps")
     
     def count(self, query: str) -> int:
-        """结果数量"""
+        """Get result count"""
         result = self.search(query, size=1)
         return result.get("total", 0)
 
 
-# ========== CVE 特征库 ==========
+# ========== CVE Fingerprint Library ==========
 
 CVE_SIGNATURES = {
-    # 中间件
+    # Middleware
     "weblogic": 'app="Oracle WebLogic Server"',
     "weblogic_cve-2020-14882": 'title="WebLogic"',
     "tomcat": 'app="Apache Tomcat" || server="Tomcat"',
     "jboss": 'app="JBoss"',
     "websphere": 'app="WebSphere"',
     
-    # Web 服务器
+    # Web Server
     "nginx": 'server="Nginx"',
     "apache": 'server="Apache"',
     "iis": 'server="Microsoft-IIS"',
     
-    # 框架
+    # Framework
     "spring": 'app="Spring" || header="Spring"',
     "struts": 'app="Apache Struts"',
     "django": 'app="Django"',
@@ -141,7 +140,7 @@ CVE_SIGNATURES = {
     "shiro": 'app="Apache Shiro"',
     "fastjson": 'app="Fastjson"',
     
-    # 数据库
+    # Database
     "mysql": 'port="3306" && app="MySQL"',
     "postgresql": 'port="5432"',
     "mongodb": 'port="27017"',
@@ -149,12 +148,12 @@ CVE_SIGNATURES = {
     "elasticsearch": 'port="9200"',
     "memcached": 'port="11211"',
     
-    # 缓存/消息
+    # Cache/Message Queue
     "rabbitmq": 'port="15672"',
     "kafka": 'port="9092"',
     "activemq": 'port="8161"',
     
-    # 运维工具
+    # DevOps Tools
     "jenkins": 'title="Jenkins"',
     "gitlab": 'title="GitLab"',
     "nexus": 'title="Nexus"',
@@ -163,13 +162,13 @@ CVE_SIGNATURES = {
     "zabbix": 'app="Zabbix"',
     "grafana": 'title="Grafana"',
     
-    # 云原生
+    # Cloud Native
     "docker": 'port="2375" || port="2376"',
     "kubernetes": 'port="6443"',
     "minio": 'title="MinIO"',
     "harbor": 'title="Harbor"',
     
-    # 其他服务
+    # Other Services
     "zookeeper": 'port="2181"',
     "hadoop": 'port="50070"',
     "jupyter": 'title="Jupyter"',
@@ -178,29 +177,30 @@ CVE_SIGNATURES = {
 
 
 def cve_lookup(keyword: str = None) -> List[Dict]:
-    """CVE/产品特征查询"""
+    """CVE/Product fingerprint lookup"""
     if not keyword:
         return [{"name": k, "query": v} for k, v in CVE_SIGNATURES.items()]
     
     keyword = keyword.lower()
     matches = [(k, v) for k, v in CVE_SIGNATURES.items() if keyword in k]
-    return [{"name": k, "query": v} for k, v in matches] if matches else [{"error": f"未找到: {keyword}"}]
+    return [{"name": k, "query": v} for k, v in matches] if matches else [{"error": f"Not found: {keyword}"}]
 
 
-# ========== 命令行 ==========
+# ========== Command Line Interface ==========
 
 def cmd_search(args):
+    """Search command"""
     fofa = FOFA()
     fields = args.fields or "host,ip,port,protocol,server,title,domain"
     
-    print(f"[FOFA] 查询: {args.query}")
-    print(f"[FOFA] 数量: {args.size}, 页码: {args.page}")
+    print(f"[FOFA] Query: {args.query}")
+    print(f"[FOFA] Size: {args.size}, Page: {args.page}")
     
     result = fofa.search(args.query, size=args.size, page=args.page, fields=fields)
     results = result.get("results", [])
     total = result.get("total", 0)
     
-    print(f"[FOFA] 总计: {total}, 返回: {len(results)}")
+    print(f"[FOFA] Total: {total}, Returned: {len(results)}")
     
     for i, r in enumerate(results[:args.limit], 1):
         print(f"  {i}. {r}")
@@ -208,7 +208,7 @@ def cmd_search(args):
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
-        print(f"[FOFA] 已保存: {args.output}")
+        print(f"[FOFA] Saved: {args.output}")
     
     if args.csv:
         with open(args.csv, "w", newline="", encoding="utf-8") as f:
@@ -220,24 +220,27 @@ def cmd_search(args):
 
 
 def cmd_host(args):
+    """Host query command"""
     fofa = FOFA()
     result = fofa.host(args.host)
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 def cmd_hosts(args):
+    """Batch hosts command"""
     fofa = FOFA()
     result = fofa.hosts(args.hosts, simple=args.simple)
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 def cmd_stats(args):
+    """Statistics command"""
     fofa = FOFA()
     result = fofa.stats(args.query, args.field)
     
-    print(f"[FOFA] 查询: {args.query}")
-    print(f"[FOFA] 字段: {args.field}")
-    print("\n=== 统计结果 ===")
+    print(f"[FOFA] Query: {args.query}")
+    print(f"[FOFA] Field: {args.field}")
+    print("\n=== Statistics ===")
     
     stat = result.get("stat", {})
     if args.field in stat:
@@ -248,33 +251,37 @@ def cmd_stats(args):
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
-        print(f"\n[FOFA] 已保存: {args.output}")
+        print(f"\n[FOFA] Saved: {args.output}")
 
 
 def cmd_info(args):
+    """Account info command"""
     fofa = FOFA()
     result = fofa.user_info()
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 def cmd_products(args):
+    """Products list command"""
     fofa = FOFA()
     result = fofa.products()
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 def cmd_count(args):
+    """Count command"""
     fofa = FOFA()
     count = fofa.count(args.query)
-    print(f"[FOFA] 查询: {args.query}")
-    print(f"[FOFA] 总数: {count}")
+    print(f"[FOFA] Query: {args.query}")
+    print(f"[FOFA] Total: {count}")
 
 
 def cmd_cve(args):
+    """CVE/Product fingerprint command"""
     results = cve_lookup(args.keyword)
     
     if args.list:
-        print(f"共 {len(CVE_SIGNATURES)} 个特征:\n")
+        print(f"Total {len(CVE_SIGNATURES)} fingerprints:\n")
         for k, v in CVE_SIGNATURES.items():
             print(f"  {k}: {v}")
     else:
@@ -285,24 +292,25 @@ def cmd_cve(args):
                 print(f"[{r['name']}] {r['query']}")
                 
                 if args.search:
-                    print(f"  -> 执行 FOFA 查询...")
+                    print(f"  -> Executing FOFA search...")
                     fofa = FOFA()
                     try:
                         data = fofa.search(r["query"], size=args.size)
-                        print(f"  -> 找到 {len(data.get('results', []))} 条结果")
+                        print(f"  -> Found {len(data.get('results', []))} results")
                         for item in data.get("results", [])[:3]:
                             print(f"     {item}")
                     except Exception as e:
-                        print(f"  -> 错误: {e}")
+                        print(f"  -> Error: {e}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="FOFA API 客户端")
+    """Main entry point"""
+    parser = argparse.ArgumentParser(description="FOFA API Client")
     subparsers = parser.add_subparsers(dest="cmd")
     
     # search
-    p = subparsers.add_parser("search", help="资产查询")
-    p.add_argument("query", help="FOFA 查询语法")
+    p = subparsers.add_parser("search", help="Asset query")
+    p.add_argument("query", help="FOFA query syntax")
     p.add_argument("--size", "-s", type=int, default=100)
     p.add_argument("--page", "-p", type=int, default=1)
     p.add_argument("--fields", "-f")
@@ -311,36 +319,36 @@ def main():
     p.add_argument("--csv", "-c")
     
     # host
-    p = subparsers.add_parser("host", help="Host 查询")
+    p = subparsers.add_parser("host", help="Host query")
     p.add_argument("host")
     
     # hosts
-    p = subparsers.add_parser("hosts", help="批量 Host")
+    p = subparsers.add_parser("hosts", help="Batch host query")
     p.add_argument("hosts", nargs="+")
     p.add_argument("--simple", action="store_true")
     
     # stats
-    p = subparsers.add_parser("stats", help="统计聚合")
+    p = subparsers.add_parser("stats", help="Statistics aggregation")
     p.add_argument("query")
     p.add_argument("--field", "-t", default="protocol")
     p.add_argument("--limit", "-l", type=int, default=20)
     p.add_argument("--output", "-o")
     
     # info
-    subparsers.add_parser("info", help="账号信息")
+    subparsers.add_parser("info", help="Account info")
     
     # products
-    subparsers.add_parser("products", help="产品列表")
+    subparsers.add_parser("products", help="Product list")
     
     # count
-    p = subparsers.add_parser("count", help="数量查询")
+    p = subparsers.add_parser("count", help="Count query")
     p.add_argument("query")
     
     # cve
-    p = subparsers.add_parser("cve", help="CVE/产品特征")
-    p.add_argument("keyword", nargs="?", help="关键词")
-    p.add_argument("--list", "-l", action="store_true", help="列出所有")
-    p.add_argument("--search", action="store_true", help="执行查询")
+    p = subparsers.add_parser("cve", help="CVE/Product fingerprints")
+    p.add_argument("keyword", nargs="?", help="Keyword")
+    p.add_argument("--list", "-l", action="store_true", help="List all")
+    p.add_argument("--search", action="store_true", help="Execute search")
     p.add_argument("--size", "-s", type=int, default=10)
     
     args = parser.parse_args()
