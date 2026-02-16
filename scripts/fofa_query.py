@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 FOFA API Client
-API: search, stats, host, hosts, info, products, next, count
+Only 5 endpoints: search, stats, host, info, next
 """
 
 import os
@@ -12,8 +12,6 @@ import urllib.parse
 import urllib.request
 import base64
 
-
-# ========== Configuration ==========
 
 FOFA_EMAIL = os.environ.get("FOFA_EMAIL")
 FOFA_API_KEY = os.environ.get("FOFA_API_KEY")
@@ -57,58 +55,37 @@ def api_request(endpoint: str, params: dict = None):
 
 
 class FOFA:
-    """FOFA API Client"""
-    
     def search(self, query: str, size: int = 100, page: int = 1):
-        """Search query"""
         qbase64 = base64.b64encode(query.encode()).decode()
         return api_request("/search/all", {"qbase64": qbase64, "size": min(size, 10000), "page": page})
     
     def stats(self, query: str, field: str = "protocol"):
-        """Statistics aggregation"""
         qbase64 = base64.b64encode(query.encode()).decode()
         return api_request("/search/stats", {"qbase64": qbase64, "field": field})
     
     def host(self, host: str):
-        """Host aggregation"""
         return api_request(f"/host/{host}")
     
     def info(self):
-        """Account info"""
         return api_request("/info/my")
     
-    def hosts(self, hosts: str):
-        """Batch host query"""
-        return api_request("/search/hosts", {"hosts": hosts})
-    
-    def products(self):
-        """Product list"""
-        return api_request("/info/products")
-    
     def next(self, last_id: str, size: int = 100):
-        """Pagination - get next page"""
         return api_request("/search/next", {"last_id": last_id, "size": min(size, 10000)})
     
     def count(self, query: str) -> int:
-        """Get result count"""
         result = self.search(query, size=1, page=1)
         return result.get("total", 0)
 
-
-# ========== CLI ==========
 
 def cmd_search(args):
     fofa = FOFA()
     result = fofa.search(args.query, size=args.size, page=args.page)
     results = result.get("results", [])
     total = result.get("total", 0)
-    
     print(f"Query: {args.query}")
     print(f"Total: {total}, Returned: {len(results)}")
-    
     for i, r in enumerate(results[:args.limit], 1):
         print(f"  {i}. {r}")
-    
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
@@ -118,10 +95,8 @@ def cmd_search(args):
 def cmd_stats(args):
     fofa = FOFA()
     result = fofa.stats(args.query, args.field)
-    
     print(f"Query: {args.query}")
     print(f"Field: {args.field}")
-    
     stat = result.get("stat", {})
     if args.field in stat:
         data = stat[args.field]
@@ -138,18 +113,6 @@ def cmd_host(args):
 def cmd_info(args):
     fofa = FOFA()
     result = fofa.info()
-    print(json.dumps(result, ensure_ascii=False, indent=2))
-
-
-def cmd_hosts(args):
-    fofa = FOFA()
-    result = fofa.hosts(args.hosts)
-    print(json.dumps(result, ensure_ascii=False, indent=2))
-
-
-def cmd_products(args):
-    fofa = FOFA()
-    result = fofa.products()
     print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
@@ -174,7 +137,6 @@ def main():
     parser = argparse.ArgumentParser(description="FOFA API Client")
     subparsers = parser.add_subparsers(dest="cmd")
     
-    # search
     p = subparsers.add_parser("search", help="Asset query")
     p.add_argument("query")
     p.add_argument("--size", "-s", type=int, default=100)
@@ -182,33 +144,21 @@ def main():
     p.add_argument("--limit", "-l", type=int, default=10)
     p.add_argument("--output", "-o")
     
-    # stats
     p = subparsers.add_parser("stats", help="Statistics")
     p.add_argument("query")
     p.add_argument("--field", "-t", default="protocol")
     p.add_argument("--limit", "-l", type=int, default=20)
     
-    # host
     p = subparsers.add_parser("host", help="Host aggregation")
     p.add_argument("host")
     
-    # info
-    p = subparsers.add_parser("info", help="Account info")
+    subparsers.add_parser("info", help="Account info")
     
-    # hosts
-    p = subparsers.add_parser("hosts", help="Batch host query")
-    p.add_argument("hosts", help="Comma-separated hosts")
-    
-    # products
-    subparsers.add_parser("products", help="Product list")
-    
-    # next
     p = subparsers.add_parser("next", help="Pagination")
     p.add_argument("last_id")
     p.add_argument("--size", "-s", type=int, default=100)
     p.add_argument("--limit", "-l", type=int, default=10)
     
-    # count
     p = subparsers.add_parser("count", help="Count query")
     p.add_argument("query")
     
@@ -227,10 +177,6 @@ def main():
             cmd_host(args)
         elif args.cmd == "info":
             cmd_info(args)
-        elif args.cmd == "hosts":
-            cmd_hosts(args)
-        elif args.cmd == "products":
-            cmd_products(args)
         elif args.cmd == "next":
             cmd_next(args)
         elif args.cmd == "count":
