@@ -32,7 +32,6 @@ def api_request(endpoint: str, params: dict = None):
     url = f"{BASE_URL}{endpoint}"
     
     if params:
-        params["email"] = email
         params["key"] = key
         query_string = "&".join([f"{k}={urllib.parse.quote(str(v))}" for k, v in params.items()])
         url = f"{url}?{query_string}"
