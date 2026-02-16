@@ -149,6 +149,16 @@ print(count)
 
 This skill uses Python standard library only. No additional dependencies required.
 
+## API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `/api/v1/search/all` | Search query |
+| `/api/v1/search/stats` | Statistics (VIP only) |
+| `/api/v1/host/{host}` | Host aggregation |
+| `/api/v1/info/my` | Account info |
+| `/api/v1/search/next` | Pagination |
+
 ## License
 
 MIT
