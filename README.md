@@ -4,129 +4,53 @@
 
 ## Overview
 
-FOFA is a leading Cyberspace search engine in China. This skill provides a complete CLI tool for asset discovery, query, and statistics.
+FOFA is a leading Cyberspace search engine in China. This skill provides CLI access to official FOFA API.
 
-## Features
+## API Endpoints (Only 5)
 
-- Complete official API wrapper
-- Asset query and statistics aggregation
-- CVE/Product fingerprint quick lookup
-- Batch processing support
-- JSON/CSV export
-- Zero dependencies (Python standard library only)
+| Endpoint | Description |
+|----------|-------------|
+| `/api/v1/search/all` | Asset query |
+| `/api/v1/search/stats` | Statistics (VIP only) |
+| `/api/v1/host/{host}` | Host aggregation |
+| `/api/v1/info/my` | Account info |
+| `/api/v1/search/next` | Pagination |
 
 ## Requirements
 
 - Python 3.7+
 - FOFA API Key
 
-## Quick Start
-
-### 1. Configure Authentication
+## Authentication
 
 ```bash
 export FOFA_EMAIL="your@email.com"
 export FOFA_API_KEY="your-api-key"
+
+# Or use single token
+export FOFA_TOKEN="email:key"
 ```
 
-### 2. Test Before Upload
-
-Always test the script locally before uploading to GitHub:
+## Usage
 
 ```bash
-# Test basic search
-python scripts/fofa_query.py search "domain=example.com"
-
-# Test info command
-python scripts/fofa_query.py info
-
-# Test count command
-python scripts/fofa_query.py count "domain=example.com"
-```
-
-### 3. Verify No Errors
-
-Check that all commands work correctly:
-- `search` - Asset query
-- `count` - Result count  
-- `info` - Account info
-
-Note: Some features like `stats` require FOFA VIP membership.
-
-## Basic Usage
-
-```bash
-# Asset query
+# Search
 python fofa_query.py search "domain=example.com"
 
-# Statistics
+# Statistics (VIP)
 python fofa_query.py stats "port=3306" --field country
 
-# CVE fingerprints
-python fofa_query.py cve redis
+# Host aggregation
+python fofa_query.py host 1.1.1.1
 
 # Account info
 python fofa_query.py info
-```
 
-## Commands
+# Pagination
+python fofa_query.py next <last_id>
 
-### search - Asset Query
-
-```bash
-python fofa_query.py search <query> [options]
-
-# Examples
-python fofa_query.py search "domain=baidu.com"
-python fofa_query.py search "port=3306" -s 1000
-python fofa_query.py search "server=nginx" -o result.json
-```
-
-### stats - Statistics Aggregation (VIP Required)
-
-```bash
-python fofa_query.py stats <query> --field <field>
-
-# Available fields
-# protocol, os, server, port, domain, country, province, city
-```
-
-### cve - CVE/Product Fingerprints
-
-```bash
-# List all fingerprints
-python fofa_query.py cve --list
-
-# Query specific product
-python fofa_query.py cve redis
-python fofa_query.py cve weblogic
-
-# Query and execute search
-python fofa_query.py cve redis --search
-```
-
-## Query Syntax
-
-### Basic Syntax
-
-| Syntax | Description | Example |
-|--------|-------------|---------|
-| `domain=` | Domain | `domain=baidu.com` |
-| `host=` | Host | `host=192.168.1.1` |
-| `ip=` | IP Range | `ip=1.1.1.0/24` |
-| `port=` | Port | `port=3306` |
-| `server=` | Server | `server=nginx` |
-| `app=` | Application | `app=MySQL` |
-| `title=` | Title | `title=login` |
-
-### Combined Queries
-
-```bash
-# AND
-python fofa_query.py search "domain=example.com AND port=80"
-
-# OR
-python fofa_query.py search "server=nginx OR server=apache"
+# Count
+python fofa_query.py count "domain=example.com"
 ```
 
 ## Python Usage
@@ -136,28 +60,22 @@ from fofa_query import FOFA
 
 fofa = FOFA()
 
-# Query
+# Search
 result = fofa.search("domain=example.com", size=100)
 print(result["results"])
 
+# Stats
+result = fofa.stats("port=3306", field="country")
+
+# Host
+result = fofa.host("1.1.1.1")
+
+# Info
+result = fofa.info()
+
 # Count
 count = fofa.count("domain=example.com")
-print(count)
 ```
-
-## Dependencies
-
-This skill uses Python standard library only. No additional dependencies required.
-
-## API Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| `/api/v1/search/all` | Search query |
-| `/api/v1/search/stats` | Statistics (VIP only) |
-| `/api/v1/host/{host}` | Host aggregation |
-| `/api/v1/info/my` | Account info |
-| `/api/v1/search/next` | Pagination |
 
 ## License
 
