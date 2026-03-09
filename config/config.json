@@ -1,0 +1,5 @@
+{
+  "name": "fofa",
+  "description": "FOFA 资产搜索",
+  "ttl": {"P0": 30, "P1": 90}
+}
